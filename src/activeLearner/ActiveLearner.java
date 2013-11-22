@@ -1,7 +1,16 @@
 package activeLearner;
 
+import weka.classifiers.functions.SMO;
+import learnerHelper.DataManager;
+
 public class ActiveLearner {
-	public static void main(String args[]){
-		
+	DataManager dm = null;
+	SMO classifier = null;
+	
+	public ActiveLearner(){
+		dm = DataManager.getInstance();
+		classifier = new SMO();
 	}
+	
+	
 }

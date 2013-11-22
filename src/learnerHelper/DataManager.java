@@ -3,6 +3,7 @@ package learnerHelper;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 
@@ -62,43 +63,43 @@ public class DataManager {
 	}
 
 	public void selectInformativeAttributes(int num) {
-//		ArrayList<Tuple> infolist = new ArrayList<Tuple>();
-//		try {
-//			eval.buildEvaluator(trainingAllSet);
-//			for (int i = 0; i < trainingAllSet.numAttributes(); i++) {
-//				double score = eval.evaluateAttribute(i);
-//				//System.out.println(score);
-//				Tuple temp = new Tuple(i, score);
-//				infolist.add(temp);
-//			}
-//		} catch (Exception e) {
-//			System.err.println("FAILED TO EVALUATING SCORE");
-//			e.printStackTrace();
-//		}
-//		Collections.sort(infolist, new Tuple(0, 1));
-//		trainingSet = new Instances(trainingAllSet);
-//		testingSet = new Instances(testingAllSet);
-//		ArrayList<Integer> indexes = new ArrayList<Integer>();
-//		for (int i = num; i < infolist.size(); i++) {
-//			indexes.add(infolist.get(i).x);
-//		}
-//		Collections.sort(indexes);
-//		for (int i = indexes.size()-1; i >=0; i--) {
-//			int index = indexes.get(i);
-//			if (index != trainingAllSet.classIndex()) {
-//				trainingSet.deleteAttributeAt(index);
-//				testingSet.deleteAttributeAt(index);
-//			}
-//		}
+		num = num-1;
 		AttributeSelection attributeSelection = new AttributeSelection();
-	    InfoGainAttributeEval infoGainAttributeEval = new InfoGainAttributeEval();
-	    Ranker ranker = new Ranker();
-	    ranker.setNumToSelect(num);
-	    attributeSelection.setEvaluator(infoGainAttributeEval);
-	    attributeSelection.setSearch(ranker);
-	    attributeSelection.setInputFormat(trainingAllSet);
-	    trainingSet = Filter.useFilter(trainingAllSet, attributeSelection);
-	    testingSet = Filter.useFilter(testingAllSet, attributeSelection);
+		InfoGainAttributeEval infoGainAttributeEval = new InfoGainAttributeEval();
+		Ranker ranker = new Ranker();
+		ranker.setNumToSelect(num);
+		attributeSelection.setEvaluator(infoGainAttributeEval);
+		attributeSelection.setSearch(ranker);
+		// attributeSelection.setInputFormat(trainingAllSet);
+		int[] result = null;
+		try {
+			attributeSelection.SelectAttributes(trainingAllSet);
+			result = attributeSelection.selectedAttributes();
+		} catch (Exception e) {
+			System.err.println("FAILED TO SELECT ATTRIBUTES");
+			e.printStackTrace();
+		}
+		Arrays.sort(result);
+		int i = 0;
+		ArrayList<Integer> indexes = new ArrayList<Integer>();
+		int j = 0;
+		while (j < trainingAllSet.numAttributes()-1) {
+			if (i < result.length && j == result[i]) {
+				i += 1;
+			} else {
+				indexes.add(j);
+			}
+			j += 1;
+		}
+		trainingSet = new Instances(trainingAllSet);
+		testingSet = new Instances(testingAllSet);
+		for (int k = indexes.size() - 1; k >= 0; k--) {
+			int index = indexes.get(k);
+			if (index != trainingAllSet.classIndex()) {
+				trainingSet.deleteAttributeAt(index);
+				testingSet.deleteAttributeAt(index);
+			}
+		}
 	}
 
 	public class Tuple implements Comparator<Tuple> {

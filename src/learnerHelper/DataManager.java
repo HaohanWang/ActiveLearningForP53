@@ -22,6 +22,7 @@ public class DataManager {
 	Instances trainingAllSet = null;
 	Instances testingAllSet = null;
 	InfoGainAttributeEval eval = null;
+	int attributesNum = 100;
 
 	protected DataManager() {
 		eval = new InfoGainAttributeEval();
@@ -62,12 +63,14 @@ public class DataManager {
 		return testingSet;
 	}
 
-	public void selectInformativeAttributes(int num) {
-		num = num-1;
+	public void selectInformativeAttributes() {
+		trainingSet = null;
+		testingSet = null;
+		attributesNum = attributesNum-1;
 		AttributeSelection attributeSelection = new AttributeSelection();
 		InfoGainAttributeEval infoGainAttributeEval = new InfoGainAttributeEval();
 		Ranker ranker = new Ranker();
-		ranker.setNumToSelect(num);
+		ranker.setNumToSelect(attributesNum);
 		attributeSelection.setEvaluator(infoGainAttributeEval);
 		attributeSelection.setSearch(ranker);
 		// attributeSelection.setInputFormat(trainingAllSet);
@@ -101,6 +104,12 @@ public class DataManager {
 			}
 		}
 	}
+	
+	public void increaseTrainingSet(int index){
+		trainingAllSet.add(testingAllSet.instance(index));
+		testingAllSet.delete(index);
+		selectInformativeAttributes();
+	}
 
 	public class Tuple implements Comparator<Tuple> {
 		public final int x;
@@ -119,10 +128,19 @@ public class DataManager {
 
 	public static void main(String args[]) {
 		DataManager dm = DataManager.getInstance();
-		dm.selectInformativeAttributes(100);
+		dm.selectInformativeAttributes();
+		dm.setAttributesNum(100);
 		Instances a = dm.getTrainingSet();
 		Instances b = dm.getTestingSet();
 		System.out.println(a.numAttributes());
 		System.out.println(b.numInstances());
+	}
+
+	public int getAttributesNum() {
+		return attributesNum;
+	}
+
+	public void setAttributesNum(int attributesNum) {
+		this.attributesNum = attributesNum;
 	}
 }

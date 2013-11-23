@@ -58,17 +58,32 @@ public class ActiveLearner {
 	public int selectNextInstance() {
 		Instances testingSet = dm.getTestingSet();
 		Instances trainingSet = dm.getTrainingSet();
+		SMO localClassifier = new SMO();
+		try {
+			localClassifier.buildClassifier(trainingSet);
+		} catch (Exception e) {
+			System.err.println("FAILED TO BUILD LOCAL CLASSIFIER");
+			e.printStackTrace();
+		}
 		double max = 0.0;
 		int index = -1;
 		for (int i = 0; i < testingSet.numInstances(); i++) {
 			double score = getMaximumCuriosity(trainingSet,
 					testingSet.instance(i));
+			try {
+				if (localClassifier.classifyInstance(testingSet.instance(i)) == 0.0){
+					score += alpha;
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			if (score > max) {
 				index = i;
 				max = score;
 			}
 		}
-		System.out.print("curiosity: " + max);
+		System.out.print(" curiosity: " + max);
 		return index;
 	}
 
@@ -83,20 +98,20 @@ public class ActiveLearner {
 		double tp = 0.0, tn = 0.0, fp = 0.0, fn = 0.0;
 		try {
 			for (int i = 0; i < test.numInstances(); i++) {
-				if (classifier.classifyInstance(test.instance(i)) == 1.0
-						&& test.instance(i).classValue() == 1.0) {
+				if (classifier.classifyInstance(test.instance(i)) == 0.0
+						&& test.instance(i).classValue() == 0.0) {
 					tp += 1;
 				}
-				if (classifier.classifyInstance(test.instance(i)) == 1.0
-						&& test.instance(i).classValue() == 0.0) {
-					fp += 1;
-				}
 				if (classifier.classifyInstance(test.instance(i)) == 0.0
 						&& test.instance(i).classValue() == 1.0) {
+					fp += 1;
+				}
+				if (classifier.classifyInstance(test.instance(i)) == 1.0
+						&& test.instance(i).classValue() == 0.0) {
 					fn += 1;
 				}
-				if (classifier.classifyInstance(test.instance(i)) == 0.0
-						&& test.instance(i).classValue() == 0.0) {
+				if (classifier.classifyInstance(test.instance(i)) == 1.0
+						&& test.instance(i).classValue() == 1.0) {
 					tn += 1;
 				}
 			}
@@ -120,6 +135,7 @@ public class ActiveLearner {
 		double fn = result[3];
 		double precision = tp / (tp + fp);
 		double recall = tp / (tp + fn);
+		System.out.print(" Three scores: "+tp+"\t"+fp+"\t"+fn);
 		double F = (1 + alpha * alpha) * precision * recall
 				/ (alpha * alpha * precision + recall);
 		return F;
@@ -135,7 +151,7 @@ public class ActiveLearner {
 			dm.increaseTrainingSet(index);
 			double F = evaluate();
 			result.add(F);
-			System.out.println("score"+F);
+			System.out.println(" Fscore"+F);
 			step++;
 		}
 		return result;

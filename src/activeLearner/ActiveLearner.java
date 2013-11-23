@@ -44,7 +44,7 @@ public class ActiveLearner {
 		ts.randomize(new Random());
 		int mid = (int) (ts.numInstances() * 0.9);
 		Instances train = new Instances(ts, 0, mid);
-		Instances test = new Instances(ts, mid, ts.numInstances()-1);
+		Instances test = new Instances(ts, mid, ts.numInstances()-mid);
 		double[] result = evaluateBasic(train, test);
 		double tp = result[0];
 		double fp = result[1];

@@ -110,6 +110,14 @@ public class DataManager {
 		testingAllSet.delete(index);
 		selectInformativeAttributes();
 	}
+	
+	public void increaseTrainingSetBatch(ArrayList<Integer> sortedResult){
+		for (int i = sortedResult.size()-1;i>=0;i--){
+			trainingAllSet.add(testingAllSet.instance(i));
+			testingAllSet.delete(i);
+		}
+		selectInformativeAttributes();
+	}
 
 	public class Tuple implements Comparator<Tuple> {
 		public final int x;
@@ -126,21 +134,24 @@ public class DataManager {
 		}
 	}
 
-	public static void main(String args[]) {
-		DataManager dm = DataManager.getInstance();
-		dm.selectInformativeAttributes();
-		dm.setAttributesNum(100);
-		Instances a = dm.getTrainingSet();
-		Instances b = dm.getTestingSet();
-		System.out.println(a.numAttributes());
-		System.out.println(b.numInstances());
-	}
-
 	public int getAttributesNum() {
 		return attributesNum;
 	}
 
 	public void setAttributesNum(int attributesNum) {
 		this.attributesNum = attributesNum;
+	}
+	
+	public static void main(String args[]) {
+		DataManager dm = DataManager.getInstance();
+		dm.selectInformativeAttributes();
+		dm.setAttributesNum(100);
+		Instances a = dm.getTrainingSet();
+		Instances b = dm.getTestingSet();
+		for (int k=0;k<=a.numInstances()-1; k++){
+			if (a.instance(k).classValue() == 0.0){
+				System.out.println(k);
+			}
+		}
 	}
 }

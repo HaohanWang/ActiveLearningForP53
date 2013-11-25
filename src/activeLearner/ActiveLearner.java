@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.Random;
 
@@ -105,12 +106,69 @@ public class ActiveLearner {
 	}
 
 	// Select next instances with Batch mode
+//	public ArrayList<Integer> selectNextInstanceBatch() {
+//		ArrayList<Integer> result = new ArrayList<Integer>();
+//		Instances testingSet = dm.getTestingSet();
+//		Instances trainingSet = dm.getTrainingSet();
+//		PriorityQueue<Tuple> heap = new PriorityQueue<Tuple>(numberSelected,
+//				new Tuple());
+//		int capacity = numberSelected;
+//		SMO localClassifier = new SMO();
+//		try {
+//			localClassifier.buildClassifier(trainingSet);
+//		} catch (Exception e) {
+//			System.err.println("FAILED TO BUILD LOCAL CLASSIFIER");
+//			e.printStackTrace();
+//		}
+//		for (int i = 0; i < testingSet.numInstances(); i++) {
+//			Instances m = new Instances(testingSet, i, 1);
+//			double score = getMaximumCuriosity(trainingSet, m.instance(0));
+//			try {
+//				if (localClassifier.classifyInstance(testingSet.instance(i)) == 0.0) {
+//					score += alpha;
+//				}
+//			} catch (Exception e) {
+//				System.err.println("FAILED TO CLASSIFY AN INSTANCE");
+//				e.printStackTrace();
+//			}
+//			if (capacity != 0) {
+//				if (score > 0) {
+//					Tuple tmp = new Tuple(i, score);
+//					heap.add(tmp);
+//					capacity -= 1;
+//				}
+//			} else {
+//				if (score > heap.peek().y) {
+//					System.out.println("===========================");
+//					OutPutPriorityQueue(heap);
+//					Tuple tmp = new Tuple(i, score);
+//					heap.remove();
+//					heap.add(tmp);
+//					OutPutPriorityQueue(heap);
+//					System.out.println("===========================");
+//				}
+//			}
+//		}
+//		Iterator<Tuple> it = heap.iterator();
+//		while (it.hasNext()) {
+//			Tuple tmp = it.next();
+//			int index = tmp.x;
+//			System.out.print(" x: " + index);
+//			result.add(index);
+//			System.out.println(" " + testingSet.instance(index).classValue());
+//			if (testingSet.instance(index).classValue() == 0.0)
+//				positiveFound += 1;
+//		}
+//		System.out.print(" positive Found " + positiveFound);
+//		Collections.sort(result);
+//		return result;
+//	}
+	
 	public ArrayList<Integer> selectNextInstanceBatch() {
 		ArrayList<Integer> result = new ArrayList<Integer>();
 		Instances testingSet = dm.getTestingSet();
 		Instances trainingSet = dm.getTrainingSet();
-		PriorityQueue<Tuple> stack = new PriorityQueue<Tuple>(numberSelected,
-				new Tuple());
+		LinkedList<Tuple> seq = new LinkedList<Tuple>();
 		int capacity = numberSelected;
 		SMO localClassifier = new SMO();
 		try {
@@ -131,24 +189,23 @@ public class ActiveLearner {
 				e.printStackTrace();
 			}
 			if (capacity != 0) {
-				Tuple tmp = new Tuple(i, score);
-				stack.add(tmp);
-				capacity -= 1;
-			} else {
-				if (score > stack.peek().y) {
+				if (score > 0) {
 					Tuple tmp = new Tuple(i, score);
-					stack.poll();
-					stack.add(tmp);
+					seq.add(tmp);
+					capacity -= 1;
+				}
+			} else {
+				Collections.sort(seq, new Tuple());
+				if (score > seq.get(0).y) {
+					Tuple tmp = new Tuple(i, score);
+					seq.removeFirst();
+					seq.add(tmp);
 				}
 			}
 		}
-		Iterator<Tuple> it = stack.iterator();
-		while (it.hasNext()) {
-			Tuple tmp = it.next();
-			int index = tmp.x;
-			System.out.print(" x:" + index);
+		for (int i=0; i<seq.size();i++){
+			int index = seq.get(i).x;
 			result.add(index);
-			System.out.println(" " + testingSet.instance(index).classValue());
 			if (testingSet.instance(index).classValue() == 0.0)
 				positiveFound += 1;
 		}
@@ -156,6 +213,8 @@ public class ActiveLearner {
 		Collections.sort(result);
 		return result;
 	}
+	
+	
 
 	// basic evaluate function
 	public double[] evaluateBasic(Instances train, Instances test) {
@@ -259,6 +318,18 @@ public class ActiveLearner {
 		@Override
 		public int compare(Tuple o1, Tuple o2) {
 			return (int) (o1.y - o2.y);
+		}
+	}
+	
+	public void OutPutPriorityQueue(PriorityQueue<Tuple> heap){
+		Tuple [] temp = new Tuple[5];
+		for (int i=0;i<5;i++){
+			temp[i] = heap.poll();
+			System.out.print(temp[i].x+" "+temp[i].y+"\t");
+		}
+		System.out.println();
+		for (int i=0; i<5; i++){
+			heap.add(temp[i]);
 		}
 	}
 }

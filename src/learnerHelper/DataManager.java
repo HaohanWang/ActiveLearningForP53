@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Random;
 
 import weka.attributeSelection.AttributeSelection;
 import weka.attributeSelection.InfoGainAttributeEval;
@@ -37,7 +38,7 @@ public class DataManager {
 			e.printStackTrace();
 		}
 		trainingAllSet = new Instances(set, 0, 50);
-		testingAllSet = new Instances(set, 50, 180);
+		testingAllSet = new Instances(set, 50, 130);
 		for (int i = 180; i <= 800; i++) {
 			trainingAllSet.add(set.instance(i));
 		}
@@ -60,6 +61,7 @@ public class DataManager {
 	}
 
 	public Instances getTestingSet() {
+		testingSet.randomize(new Random());
 		return testingSet;
 	}
 

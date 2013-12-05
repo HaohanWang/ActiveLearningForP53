@@ -115,8 +115,8 @@ public class DataManager {
 	
 	public void increaseTrainingSetBatch(ArrayList<Integer> sortedResult){
 		for (int i = sortedResult.size()-1;i>=0;i--){
-			trainingAllSet.add(testingAllSet.instance(i));
-			testingAllSet.delete(i);
+			trainingAllSet.add(testingAllSet.instance(sortedResult.get(i)));
+			testingAllSet.delete(sortedResult.get(i));
 		}
 		selectInformativeAttributes();
 	}

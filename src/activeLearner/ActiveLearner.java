@@ -13,14 +13,16 @@ import weka.classifiers.functions.SMO;
 import weka.core.Instance;
 import weka.core.Instances;
 import learnerHelper.DataManager;
-import learnerHelper.DataManager.Tuple;
 
 public class ActiveLearner {
 	DataManager dm = null;
 	SMO classifier = null;
-	double alpha = 0.5;
+	double alpha = 1;
 	int positiveFound = 0;
 	int numberSelected = 5;
+	int initPositive = 50;
+	int initNegative = 620;
+	int step = 0;
 
 	public ActiveLearner() {
 		dm = DataManager.getInstance();
@@ -105,65 +107,6 @@ public class ActiveLearner {
 		return index;
 	}
 
-	// Select next instances with Batch mode
-//	public ArrayList<Integer> selectNextInstanceBatch() {
-//		ArrayList<Integer> result = new ArrayList<Integer>();
-//		Instances testingSet = dm.getTestingSet();
-//		Instances trainingSet = dm.getTrainingSet();
-//		PriorityQueue<Tuple> heap = new PriorityQueue<Tuple>(numberSelected,
-//				new Tuple());
-//		int capacity = numberSelected;
-//		SMO localClassifier = new SMO();
-//		try {
-//			localClassifier.buildClassifier(trainingSet);
-//		} catch (Exception e) {
-//			System.err.println("FAILED TO BUILD LOCAL CLASSIFIER");
-//			e.printStackTrace();
-//		}
-//		for (int i = 0; i < testingSet.numInstances(); i++) {
-//			Instances m = new Instances(testingSet, i, 1);
-//			double score = getMaximumCuriosity(trainingSet, m.instance(0));
-//			try {
-//				if (localClassifier.classifyInstance(testingSet.instance(i)) == 0.0) {
-//					score += alpha;
-//				}
-//			} catch (Exception e) {
-//				System.err.println("FAILED TO CLASSIFY AN INSTANCE");
-//				e.printStackTrace();
-//			}
-//			if (capacity != 0) {
-//				if (score > 0) {
-//					Tuple tmp = new Tuple(i, score);
-//					heap.add(tmp);
-//					capacity -= 1;
-//				}
-//			} else {
-//				if (score > heap.peek().y) {
-//					System.out.println("===========================");
-//					OutPutPriorityQueue(heap);
-//					Tuple tmp = new Tuple(i, score);
-//					heap.remove();
-//					heap.add(tmp);
-//					OutPutPriorityQueue(heap);
-//					System.out.println("===========================");
-//				}
-//			}
-//		}
-//		Iterator<Tuple> it = heap.iterator();
-//		while (it.hasNext()) {
-//			Tuple tmp = it.next();
-//			int index = tmp.x;
-//			System.out.print(" x: " + index);
-//			result.add(index);
-//			System.out.println(" " + testingSet.instance(index).classValue());
-//			if (testingSet.instance(index).classValue() == 0.0)
-//				positiveFound += 1;
-//		}
-//		System.out.print(" positive Found " + positiveFound);
-//		Collections.sort(result);
-//		return result;
-//	}
-	
 	public ArrayList<Integer> selectNextInstanceBatch() {
 		ArrayList<Integer> result = new ArrayList<Integer>();
 		Instances testingSet = dm.getTestingSet();
@@ -182,7 +125,10 @@ public class ActiveLearner {
 			double score = getMaximumCuriosity(trainingSet, m.instance(0));
 			try {
 				if (localClassifier.classifyInstance(testingSet.instance(i)) == 0.0) {
-					score += alpha;
+					double w = Math.pow((1-getPositiveSetPercentage()), 4);
+					score += w;
+//					System.out.println(w);
+//					score += 1.0;
 				}
 			} catch (Exception e) {
 				System.err.println("FAILED TO CLASSIFY AN INSTANCE");
@@ -194,16 +140,17 @@ public class ActiveLearner {
 					seq.add(tmp);
 					capacity -= 1;
 				}
-			} else {
 				Collections.sort(seq, new Tuple());
+			} else {
 				if (score > seq.get(0).y) {
 					Tuple tmp = new Tuple(i, score);
 					seq.removeFirst();
 					seq.add(tmp);
+					Collections.sort(seq, new Tuple());
 				}
 			}
 		}
-		for (int i=0; i<seq.size();i++){
+		for (int i = 0; i < seq.size(); i++) {
 			int index = seq.get(i).x;
 			result.add(index);
 			if (testingSet.instance(index).classValue() == 0.0)
@@ -213,8 +160,11 @@ public class ActiveLearner {
 		Collections.sort(result);
 		return result;
 	}
-	
-	
+
+	public double getPositiveSetPercentage() {
+		return (double) (positiveFound + initPositive)
+				/ (double) (numberSelected * step - positiveFound + initNegative);
+	}
 
 	// basic evaluate function
 	public double[] evaluateBasic(Instances train, Instances test) {
@@ -263,10 +213,14 @@ public class ActiveLearner {
 		double[] result = evaluateBasic(train, test);
 		double tp = result[0];
 		double fp = result[1];
+		double tn = result[2];
 		double fn = result[3];
+		double accuracy = (tp + tn) / (tp + tn + fp + fn);
 		double precision = tp / (tp + fp);
 		double recall = tp / (tp + fn);
-		System.out.print(" Three scores: " + tp + "\t" + fp + "\t" + fn);
+		System.out.print(" Three scores & accuracy: " + tp + "\t" + fp + "\t"
+				+ fn + "\t" + accuracy);
+		System.out.print(" precision " + (double)(tp)/(tp+fp)+" recall "+(double)(tp)/(tp+fn));
 		double F = (1 + alpha * alpha) * precision * recall
 				/ (alpha * alpha * precision + recall);
 		return F;
@@ -276,7 +230,7 @@ public class ActiveLearner {
 	public ArrayList<Double> activeLearning() {
 		boolean bacth = true;
 		ArrayList<Double> result = new ArrayList<Double>();
-		int step = 1;
+		step = 1;
 		int total = 100;
 		while (step <= total) {
 			System.out.print("Step " + step);
@@ -289,7 +243,7 @@ public class ActiveLearner {
 			}
 			double F = evaluate();
 			result.add(F);
-			System.out.println(" Fscore" + F);
+			System.out.println(" Fscore " + F);
 			step++;
 		}
 		return result;
@@ -297,7 +251,7 @@ public class ActiveLearner {
 
 	static public void main(String args[]) {
 		ActiveLearner al = new ActiveLearner();
-		al.setAlpha(0.75);
+		al.setAlpha(1);
 		al.activeLearning();
 	}
 
@@ -317,18 +271,18 @@ public class ActiveLearner {
 
 		@Override
 		public int compare(Tuple o1, Tuple o2) {
-			return (int) (o1.y - o2.y);
+			return Double.compare(o1.y, o2.y);
 		}
 	}
-	
-	public void OutPutPriorityQueue(PriorityQueue<Tuple> heap){
-		Tuple [] temp = new Tuple[5];
-		for (int i=0;i<5;i++){
+
+	public void OutPutPriorityQueue(PriorityQueue<Tuple> heap) {
+		Tuple[] temp = new Tuple[5];
+		for (int i = 0; i < 5; i++) {
 			temp[i] = heap.poll();
-			System.out.print(temp[i].x+" "+temp[i].y+"\t");
+			System.out.print(temp[i].x + " " + temp[i].y + "\t");
 		}
 		System.out.println();
-		for (int i=0; i<5; i++){
+		for (int i = 0; i < 5; i++) {
 			heap.add(temp[i]);
 		}
 	}
